@@ -39,8 +39,8 @@
 
 enum { ST_MENU, ST_PLAY, ST_PAUSE, ST_OVER, ST_WIN, ST_CUT };
 enum { P_RAIN, P_RING, P_AIM, P_FAN, P_HBEAM, P_VBEAM, P_WALLH, P_WALLV, P_BOMB, P_SPIRAL, P_PULSE,
-       P_SIDE, P_CROSS, P_HELIX, P_TRI, P_TRIGRID, P_SAWROW, P_SAWRAIL, P_SAWTHROW };
-enum { H_NONE, H_BULLET, H_RECT, H_RING, H_BOMB, H_LINE, H_SAW };
+       P_SIDE, P_CROSS, P_HELIX, P_TRI, P_TRIGRID, P_SAWROW, P_SAWRAIL, P_SAWTHROW, P_SPINBEAM, P_CANNON };
+enum { H_NONE, H_BULLET, H_RECT, H_RING, H_BOMB, H_LINE, H_SAW, H_SPIN, H_CANNON };
 enum { S_KICK, S_HAT, S_SNARE, S_HIT, S_DASH, S_CLEAR, S_OHAT, S_CLAP, S_COUNT, K_BASS = 20, K_LEAD };
 
 /* ------------------------------------------------------------------ types */
@@ -58,7 +58,7 @@ typedef struct {
     float scroll, nspd;                            /* factory scroll speed; Normal-mode bullet speed multiplier */
     Color c1, c2;
     int nev;
-    Ev ev[64];
+    Ev ev[96];
 } Level;
 typedef struct {
     float x, y, fx, fy, ang, inv, dashT, dashCD, dx, dy, trail, healCD;
@@ -78,9 +78,8 @@ static Level LV[NL] = {
    {{0,64,2,P_RAIN,3},{8,64,8,P_FAN,5},{16,64,8,P_VBEAM,2},{24,64,16,P_RING,10},{40,64,8,P_PULSE,1}}},
  /* 3  */ {"CROSSWIRE", "mind the lines", 120, 72, 0, 0, 5, 2, 0, 0.8f, {255,220,0,255}, {255,90,0,255}, 6,
    {{0,72,2,P_SIDE,2},{8,72,8,P_CROSS,1},{16,72,8,P_WALLH,0},{20,72,8,P_HBEAM,2},{32,72,8,P_BOMB,2},{40,72,16,P_PULSE,1}}},
- /* 4  */ {"METRONOME", "BOSS 1", 124, 96, 1, 6, 0, 5, 0, 0.8f, {255,60,90,255}, {255,200,60,255}, 9,
-   {{2,96,4,P_AIM,1},{4,32,4,P_FAN,5},{8,96,8,P_RING,12},{16,96,8,P_HBEAM,2},{24,96,8,P_VBEAM,2},
-    {32,64,2,P_SPIRAL,3},{48,96,16,P_PULSE,1},{64,96,8,P_WALLH,0},{72,96,8,P_BOMB,2}}},
+ /* 4  */ {"METRONOME", "BOSS 1", 124, 96, 1, 6, 0, 5, 0, 0.8f, {255,60,90,255}, {255,200,60,255}, 12,
+   {{2,96,4,P_AIM,1},{4,40,8,P_CANNON,2},{8,96,8,P_RING,12},{16,64,16,P_SPINBEAM,1},{24,96,8,P_BOMB,2},{32,64,2,P_SPIRAL,3},{40,96,16,P_SPINBEAM,2},{48,96,16,P_PULSE,2},{56,96,8,P_CANNON,3},{64,96,8,P_WALLH,0},{72,96,8,P_BOMB,3},{80,96,16,P_HBEAM,2}}},
  /* 5  */ {"BASSLINE", "feel the drop", 128, 80, 0, 0, 7, 6, 0, 0.8f, {170,90,255,255}, {0,255,220,255}, 7,
    {{0,80,2,P_SIDE,2},{8,80,8,P_WALLH,0},{12,80,8,P_WALLV,0},{16,80,8,P_BOMB,2},{24,80,8,P_HBEAM,2},
     {32,80,16,P_PULSE,1},{40,80,4,P_FAN,3}}},
@@ -90,28 +89,24 @@ static Level LV[NL] = {
  /* 7  */ {"OVERCLOCK", "hold on", 140, 96, 0, 0, 5, 2, 0, 0.8f, {255,120,0,255}, {255,0,100,255}, 9,
    {{0,96,2,P_RAIN,3},{4,96,4,P_FAN,5},{8,96,8,P_CROSS,1},{16,96,8,P_WALLH,0},{24,96,8,P_BOMB,3},
     {32,96,16,P_PULSE,1},{40,96,4,P_SPIRAL,3},{56,96,8,P_HBEAM,3},{64,96,8,P_WALLV,0}}},
- /* 8  */ {"AFTERBEAT", "BOSS 2", 150, 128, 1, 8, 0, 3, 0, 0.65f, {255,0,120,255}, {130,90,255,255}, 12,
-   {{2,128,4,P_AIM,1},{4,32,4,P_FAN,7},{8,128,8,P_RING,16},{16,128,8,P_HBEAM,2},{24,128,8,P_VBEAM,3},
-    {32,64,2,P_SPIRAL,4},{40,128,16,P_PULSE,2},{48,128,8,P_BOMB,3},{64,128,8,P_WALLH,0},
-    {72,128,8,P_WALLV,0},{88,120,4,P_SPIRAL,3},{96,128,4,P_FAN,5}}},
+ /* 8  */ {"AFTERBEAT", "BOSS 2", 150, 128, 1, 8, 0, 3, 0, 0.65f, {255,0,120,255}, {130,90,255,255}, 16,
+   {{2,128,4,P_AIM,1},{4,32,4,P_FAN,7},{8,128,8,P_RING,16},{16,64,16,P_SPINBEAM,2},{20,128,16,P_VBEAM,3},{24,128,8,P_BOMB,3},{32,64,2,P_SPIRAL,4},{40,128,16,P_PULSE,2},{48,96,8,P_CANNON,3},{56,128,16,P_SPINBEAM,3},{64,128,8,P_WALLH,0},{72,128,8,P_WALLV,0},{88,120,4,P_SPIRAL,3},{96,128,8,P_BOMB,4},{96,128,4,P_FAN,5},{104,128,8,P_CANNON,4}}},
  /* 9  */ {"GLITCH CITY", "static & neon", 136, 88, 0, 0, 9, 5, 0, 0.8f, {0,255,180,255}, {255,0,255,255}, 7,
    {{0,88,2,P_SIDE,3},{8,88,8,P_HBEAM,2},{16,88,8,P_VBEAM,2},{24,88,16,P_PULSE,1},{32,88,8,P_FAN,5},
     {48,88,8,P_CROSS,1},{56,88,4,P_AIM,1}}},
  /* 10 */ {"BLACKOUT", "lights out", 124, 80, 0, 0, 10, 4, 0, 0.8f, {200,200,255,255}, {90,90,220,255}, 6,
    {{0,80,4,P_BOMB,1},{8,80,8,P_WALLH,0},{12,80,8,P_WALLV,0},{16,80,8,P_BOMB,3},{32,80,16,P_PULSE,2},
     {40,80,8,P_HELIX,2}}},
- /* 11 */ {"TRIGRID", "BOSS 3 - triangle grid", 138, 112, 1, 3, 4, 6, 0, 0.8f, {60,255,200,255}, {255,255,120,255}, 10,
-   {{2,112,4,P_AIM,1},{4,48,8,P_TRIGRID,1},{16,48,16,P_TRIGRID,2},{48,112,16,P_TRIGRID,3},{24,112,8,P_FAN,5},
-    {32,112,8,P_BOMB,2},{40,112,16,P_PULSE,2},{56,112,8,P_TRI,4},{64,112,8,P_HBEAM,2},{80,112,8,P_RING,12}}},
+ /* 11 */ {"TRIGRID", "BOSS 3 - triangle grid", 138, 112, 1, 3, 4, 6, 0, 0.8f, {60,255,200,255}, {255,255,120,255}, 13,
+   {{2,112,4,P_AIM,1},{4,48,8,P_TRIGRID,1},{8,48,16,P_SPINBEAM,3},{16,48,16,P_TRIGRID,2},{24,112,8,P_FAN,5},{32,112,8,P_BOMB,3},{40,112,16,P_PULSE,2},{48,112,16,P_TRIGRID,3},{52,112,16,P_SPINBEAM,3},{56,112,8,P_TRI,4},{64,112,8,P_CANNON,3},{80,112,8,P_RING,12},{88,112,8,P_BOMB,4}}},
  /* 12 */ {"SHATTER", "break it", 144, 96, 0, 0, 3, 3, 0, 0.8f, {255,255,120,255}, {255,120,60,255}, 7,
    {{0,96,2,P_RAIN,4},{8,96,8,P_RING,14},{16,96,8,P_FAN,7},{24,96,8,P_HBEAM,3},{32,96,16,P_PULSE,2},
     {48,96,8,P_SPIRAL,3},{64,96,8,P_WALLH,0}}},
  /* 13 */ {"HYPERDRIVE", "hold tight", 150, 104, 0, 0, 7, 2, 0, 0.8f, {255,80,80,255}, {255,200,80,255}, 9,
    {{0,104,2,P_SIDE,3},{4,104,4,P_FAN,5},{8,104,8,P_CROSS,1},{16,104,8,P_WALLV,0},{24,104,8,P_BOMB,3},
     {32,104,8,P_HELIX,2},{48,104,16,P_PULSE,2},{56,104,8,P_HBEAM,3},{72,104,8,P_WALLH,0}}},
- /* 14 */ {"SAWMILL", "BOSS 4 - the factory", 142, 112, 1, 4, 1, 5, 105, 0.8f, {200,205,215,255}, {255,150,40,255}, 10,
-   {{2,112,4,P_SAWTHROW,1},{4,112,8,P_SAWROW,1},{8,112,8,P_SAWRAIL,2},{16,112,16,P_HBEAM,1},{24,112,8,P_FAN,3},
-    {32,112,16,P_BOMB,2},{44,112,8,P_SAWROW,1},{48,112,8,P_SAWTHROW,2},{64,112,16,P_PULSE,1},{72,112,8,P_SAWRAIL,3}}},
+ /* 14 */ {"SAWMILL", "BOSS 4 - the factory", 142, 112, 1, 4, 1, 5, 105, 0.8f, {200,205,215,255}, {255,150,40,255}, 13,
+   {{2,112,4,P_SAWTHROW,1},{4,112,8,P_SAWROW,1},{8,112,8,P_SAWRAIL,2},{16,112,16,P_SPINBEAM,2},{24,112,8,P_FAN,3},{32,112,16,P_BOMB,3},{44,112,8,P_SAWROW,1},{48,112,8,P_SAWTHROW,2},{56,112,8,P_CANNON,3},{64,112,16,P_PULSE,1},{72,112,8,P_SAWRAIL,3},{88,112,8,P_BOMB,4},{96,112,16,P_SPINBEAM,3}}},
  /* 15 */ {"ZERO GRAVITY", "float", 128, 96, 0, 0, 2, 0, 0, 0.8f, {140,120,255,255}, {80,220,255,255}, 8,
    {{0,96,2,P_RAIN,3},{8,96,8,P_SPIRAL,3},{16,96,8,P_VBEAM,3},{24,96,8,P_BOMB,3},{32,96,16,P_PULSE,2},
     {48,96,8,P_HELIX,3},{64,96,8,P_WALLH,0},{72,96,8,P_WALLV,0}}},
@@ -126,7 +121,7 @@ static void buildUltimate(void) {
     for (int p = 0; p < 4; p++) {                       /* phases 1-4: each boss's own attack script, stretched to 128 beats */
         const Level *S = &LV[BOSSIDX[p]];
         int base = p * ULT_PHASE;
-        for (int i = 0; i < S->nev && U->nev < 64; i++) {
+        for (int i = 0; i < S->nev && U->nev < 96; i++) {
             Ev n = S->ev[i];
             n.from = base + S->ev[i].from;
             n.to = (S->ev[i].to >= S->beats) ? base + ULT_PHASE : base + S->ev[i].to;
@@ -137,8 +132,8 @@ static void buildUltimate(void) {
     static const Ev fin[] = {                           /* phase 5: everybody's signature moves together */
         {512,640,8,P_RING,14},{514,640,4,P_AIM,1},{516,640,4,P_SPIRAL,3},{520,640,16,P_PULSE,2},
         {524,640,16,P_TRIGRID,2},{528,640,8,P_SAWROW,1},{536,640,16,P_SAWTHROW,2},{540,640,16,P_TRI,4},
-        {544,640,16,P_BOMB,3},{552,640,16,P_CROSS,1}};
-    for (unsigned i = 0; i < sizeof fin / sizeof fin[0] && U->nev < 64; i++) U->ev[U->nev++] = fin[i];
+        {544,640,16,P_BOMB,4},{552,640,16,P_CROSS,1},{560,640,16,P_SPINBEAM,3},{568,640,8,P_CANNON,3}};
+    for (unsigned i = 0; i < sizeof fin / sizeof fin[0] && U->nev < 96; i++) U->ev[U->nev++] = fin[i];
 }
 
 /* 16-step drum/bass/lead patterns ('x' = hit, digit = note index, '.' = rest) - one per style */
@@ -189,6 +184,7 @@ static Color Fade(Color c, float a) { c.a = (unsigned char)(clampf(a, 0, 1) * 25
 static Color mul(Color c, float k) { Color o = {(unsigned char)(c.r * k), (unsigned char)(c.g * k), (unsigned char)(c.b * k), 255}; return o; }
 static int startHP(int lvl) { int hp = 3; if (LV[lvl].boss) hp *= 2; if (casual) hp *= 2; return hp; }
 static float spdMul(void) { return hard ? 1.0f : LV[cur].nspd; }
+static float pScale(void) { return LV[cur].boss ? 1.8f : 1.0f; }      /* bigger particles on boss levels */
 static float dashCd(void) { return hard ? 0.60f : 0.50f; }
 static float beamW(void) { return hard ? 44.0f * 0.4f : 36.0f * 0.4f; }
 static float beamWarn(void) { return bl * (hard ? 2.0f : 2.6f); }
@@ -225,6 +221,8 @@ static Ev adjEv(const Ev *e) {
         if (o.arg > 1) o.arg--;
         if (soft && o.arg > 1) o.arg--;
         break;
+    case P_SPINBEAM: if (o.arg > 1) o.arg--; if (soft) o.every = o.every * 3 / 2; break;
+    case P_CANNON: if (o.arg > 1) o.arg--; if (soft) o.every = o.every * 3 / 2; break;
     case P_SAWROW: o.arg++; o.every = o.every * 3 / 2; break;
     case P_SAWRAIL: if (o.arg > 1) o.arg--; break;
     case P_SAWTHROW: if (o.every <= 4) o.every *= 2; break;
@@ -392,7 +390,7 @@ static void emit(int kind, float x, float y, float vx, float vy, float life, flo
 static void burst(float x, float y, int n, float smin, float smax, int kind, Color c, float life, float size) {
     for (int i = 0; i < n; i++) {
         float a = rr(0, PI2), s = rr(smin, smax) * 0.42f;
-        emit(kind, x, y, cosf(a) * s, sinf(a) * s, rr(life * 0.6f, life), size * 0.55f * rr(0.6f, 1.2f), c, 0, rr(-500, 500));
+        emit(kind, x, y, cosf(a) * s, sinf(a) * s, rr(life * 0.6f, life), size * 0.55f * pScale() * rr(0.6f, 1.2f), c, 0, rr(-500, 500));
     }
 }
 static void stepParticles(float dt) {
@@ -454,6 +452,16 @@ static void saw(float x, float y, float r, float vx, float vy, int rail, float a
     Hazard *h = nh(); if (!h) return;
     h->type = H_SAW; h->x = x; h->y = y; h->r = r; h->vx = vx; h->vy = vy; h->flag = rail;
     h->y0 = y; h->amp = amp; h->ph = ph; h->vr = w; h->c = c;
+}
+
+static void spin(float x, float y, int arms, float ang, float w, float len, float thick, float warn, float life, int follow, Color c) {
+    Hazard *h = nh(); if (!h) return;                 /* spinning beams: 'arms' rays rotating around a pivot */
+    h->type = H_SPIN; h->x = x; h->y = y; h->split = arms; h->rot = ang; h->vr = w; h->r = len;
+    h->thick = thick; h->warn = warn; h->w = warn; h->life = life; h->flag = follow; h->c = c;
+}
+static void cannon(float x, float y, float ang, float warn, int shots, Color c) {
+    Hazard *h = nh(); if (!h) return;                 /* wall cannon: locks on, then fires a rapid burst */
+    h->type = H_CANNON; h->x = x; h->y = y; h->rot = ang; h->warn = warn; h->w = warn; h->split = shots; h->life = 0; h->c = c;
 }
 
 static void origin(float *ox, float *oy) {
@@ -524,7 +532,7 @@ static void runPat(int pat, int arg, int b) {
         for (int i = 0; i < arg; i++) {
             float x = i == 0 ? clampf(P.x + gr(-25, 25), 38, SW - 38) : gr(38, SW - 38);
             float y = i == 0 ? clampf(P.y + gr(-25, 25), 38, SH - 38) : gr(38, SH - 38);
-            bomb(x, y, hard ? 34 : 30, bl * (hard ? 2.0f : 2.6f), 10, 1, (i & 1) ? c2 : a);
+            bomb(x, y, (hard ? 34 : 30) + (L->boss ? 8 : 0), bl * (hard ? 2.0f : 2.6f), L->boss ? 14 : 10, 1, (i & 1) ? c2 : a);
         }
         break;
     case P_SPIRAL: {
@@ -575,6 +583,19 @@ static void runPat(int pat, int arg, int b) {
             saw(ox, oy, 10, cosf(aim + (i - (arg - 1) * 0.5f) * 0.25f) * 150 * spdMul(), sinf(aim + (i - (arg - 1) * 0.5f) * 0.25f) * 150 * spdMul(),
                 0, 0, 0, 0, c2);
         break;
+    case P_SPINBEAM: {                       /* rotating laser arms, alternating direction */
+        int arms = arg < 1 ? 1 : (arg > 4 ? 4 : arg);
+        float w = (hard ? 1.2f : 0.85f) * (((b / 8) & 1) ? 1.0f : -1.0f);
+        spin(ox, oy, arms, gr(0, PI2), w, 420, beamW() * 0.85f, warn, bl * 8, L->boss ? 1 : 0, (b & 8) ? c2 : a);
+    } break;
+    case P_CANNON:                           /* cannons on the walls aim at you and fire a burst */
+        for (int i = 0; i < arg; i++) {
+            int side = ((int)gr(0, 4) + i) % 4; float x, y;
+            if (side == 0) { x = gr(30, SW - 30); y = 6; } else if (side == 1) { x = SW - 6; y = gr(30, SH - 30); }
+            else if (side == 2) { x = gr(30, SW - 30); y = SH - 6; } else { x = 6; y = gr(30, SH - 30); }
+            cannon(x, y, atan2f(P.y - y, P.x - x), bl * (hard ? 1.5f : 2.0f), hard ? 6 : 4, (i & 1) ? c2 : a);
+        }
+        break;
     case P_PULSE:
         for (int i = 0; i < arg; i++) {
             float x = ox, y = oy;
@@ -622,7 +643,12 @@ static void onBeat(int b) {
     }
     /* beat visuals: shockwave from the centre and floating motes */
     emit(2, SW / 2, SH / 2, 0, 0, 0.7f, 8, Fade(L->c1, 0.35f), 340, 0);
-    for (int i = 0; i < 4; i++) emit(0, rr(0, SW), SH + 3, rr(-6, 6), rr(-60, -25), rr(1.5f, 3), rr(1, 2), Fade(L->c2, 0.5f), 0, 0);
+    for (int i = 0; i < 4; i++) emit(0, rr(0, SW), SH + 3, rr(-6, 6), rr(-60, -25), rr(1.5f, 3), rr(1, 2) * pScale(), Fade(L->c2, 0.5f), 0, 0);
+    if (L->boss && b >= 0) {                              /* the boss throbs confetti on every beat */
+        const Level *BC = (L->boss == 2 && phaseOf(b) < 4) ? &LV[BOSSIDX[phaseOf(b)]] : L;
+        burst(bossX, bossY, 5, 50, 200, 3, BC->c2, 0.8f, 9);
+        emit(2, bossX, bossY, 0, 0, 0.5f, 12, Fade(BC->c1, 0.5f), 260, 0);
+    }
 }
 
 /* ---------------------------------------------------------- game control */
@@ -765,6 +791,41 @@ static void stepHazards(float dt, int canHit) {
             if (h->x < -50 || h->x > SW + 50 || h->y < -50 || h->y > SH + 50) { h->type = H_NONE; break; }
             if (rand() % 10 == 0) emit(1, h->x, h->y, rr(-30, 30), rr(-30, 30), 0.25f, 2, (Color){255, 200, 90, 255}, 0, 0);
             if (canHit && dist(h->x, h->y, P.x, P.y) < h->r * 0.9f + PR) hurt();
+            break;
+        case H_SPIN:
+            if (h->flag == 1) { h->x = bossX; h->y = bossY; }        /* pivot follows the boss */
+            h->rot += h->vr * dt;
+            if (h->warn > 0) {
+                h->warn -= dt;
+                if (h->warn <= 0) { shake += 2; burst(h->x, h->y, 16, 60, 260, 1, h->c, 0.5f, 4); }
+                break;
+            }
+            if (canHit)
+                for (int k = 0; k < h->split; k++) {
+                    float a = h->rot + k * PI2 / h->split;
+                    if (segDist(P.x, P.y, h->x, h->y, h->x + cosf(a) * h->r, h->y + sinf(a) * h->r) < h->thick * 0.5f + PR) { hurt(); break; }
+                }
+            if (rand() % 3 == 0) {
+                float a = h->rot + (rand() % h->split) * PI2 / h->split, d = rr(20, 200);
+                emit(1, h->x + cosf(a) * d, h->y + sinf(a) * d, rr(-30, 30), rr(-30, 30), 0.4f, 2 * pScale(), h->c, 0, 0);
+            }
+            h->life -= dt; if (h->life <= 0) h->type = H_NONE;
+            break;
+        case H_CANNON:
+            if (h->warn > 0) {
+                h->warn -= dt;
+                if (h->warn > h->w * 0.4f) h->rot = atan2f(P.y - h->y, P.x - h->x);   /* tracks you, then locks */
+                break;
+            }
+            h->life -= dt;
+            if (h->life <= 0) {
+                if (h->split <= 0) { h->type = H_NONE; break; }
+                bullet(h->x + cosf(h->rot) * 10, h->y + sinf(h->rot) * 10, h->rot, 230, 5, h->c);
+                for (int k = 0; k < 3; k++) emit(1, h->x + cosf(h->rot) * 12, h->y + sinf(h->rot) * 12,
+                                                  cosf(h->rot) * rr(40, 120) + rr(-30, 30), sinf(h->rot) * rr(40, 120) + rr(-30, 30), 0.3f, 2 * pScale(), h->c, 0, 0);
+                shake += 0.5f; play(drum[S_CLAP], 0.3f);
+                h->split--; h->life = 0.11f;
+            }
             break;
         case H_RING:
             if (h->warn > 0) {
@@ -937,6 +998,32 @@ static void drawHazards(void) {
             dRect(h->x - 1, h->y - 1, 2, 2, WHITE);
             break;
         case H_SAW: dSaw(h->x, h->y, h->r, h->rot, c); break;
+        case H_SPIN: {
+            float k = h->warn > 0 ? 1.0f - h->warn / h->w : 1.0f, fl = ((int)(h->warn * 14) & 1) ? 0.15f : 0.0f;
+            float fade = h->warn > 0 ? 1.0f : clampf(h->life / 0.35f, 0, 1);
+            for (int a2 = 0; a2 < h->split; a2++) {
+                float a = h->rot + a2 * PI2 / h->split, ex = h->x + cosf(a) * h->r, ey = h->y + sinf(a) * h->r;
+                if (h->warn > 0) dLine(h->x, h->y, ex, ey, 1.0f + 2 * k, Fade(c, 0.25f + 0.5f * k + fl));
+                else {
+                    dLine(h->x, h->y, ex, ey, h->thick * 1.7f, Fade(c, 0.28f * fade));
+                    dLine(h->x, h->y, ex, ey, h->thick, Fade(c, 0.85f * fade));
+                    dLine(h->x, h->y, ex, ey, h->thick * 0.35f, Fade(WHITE, 0.9f * fade));
+                }
+            }
+            dCircle(h->x, h->y, h->warn > 0 ? 5.0f : 8.0f, Fade(c, 0.9f));
+            dRect(h->x - 1.5f, h->y - 1.5f, 3, 3, WHITE);
+        } break;
+        case H_CANNON: {
+            float ex = h->x + cosf(h->rot) * 14, ey = h->y + sinf(h->rot) * 14;
+            if (h->warn > 0) {
+                float k = 1.0f - h->warn / h->w;
+                dLine(h->x, h->y, h->x + cosf(h->rot) * 600, h->y + sinf(h->rot) * 600, 1.0f + k * 1.5f, Fade(c, 0.15f + 0.45f * k));
+            }
+            dCircle(h->x, h->y, 9, (Color){40, 40, 52, 255});
+            dCircleLines(h->x, h->y, 9, 1.5f, c);
+            dLine(h->x, h->y, ex, ey, 6, c);
+            if (h->warn <= 0) dCircle(ex, ey, 5, Fade(WHITE, 0.85f));
+        } break;
         case H_LINE:
             if (h->warn > 0) {
                 float k = 1.0f - h->warn / h->vr, fl = ((int)(h->warn * 14) & 1) ? 0.15f : 0.0f;
